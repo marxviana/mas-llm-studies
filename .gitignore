@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.env
+# only the runs reported in the paper are versioned
+results/*
+!results/v3/
+!results/phase2-offline/
+!results/phase2-llm/
+!results/phase2-llm-s2p1/
+!results/ext-llm/
