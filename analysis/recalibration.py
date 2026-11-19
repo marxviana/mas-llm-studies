@@ -25,10 +25,21 @@ from llm_mas.scenarios.icu import ReplayBeliefs, run_icu
 
 def isotonic(points: list[tuple[float, bool]]) -> tuple[list[float], list[float]]:
     """Pool-adjacent-violators sobre (q, real) ordenados por q. Devolve os limites
-    superiores de q de cada bloco e a probabilidade (Jeffreys) do bloco."""
+    superiores de q de cada bloco e a probabilidade (Jeffreys) do bloco.
+
+    Pontos com o mesmo q começam no mesmo bloco (como no IsotonicRegression do
+    scikit-learn). A primeira versão deste script tratava cada ponto em separado:
+    (q, falso) vinha antes de (q, verdadeiro), formavam-se dois blocos com o mesmo
+    limite e ``apply`` devolvia o de só negativos, subestimando q empatados com
+    casos reais (corrigido em 2026-11-19; ver tests/test_recalibration.py)."""
+    tied: dict[float, list[float]] = {}
+    for q, y in points:
+        t = tied.setdefault(q, [0.0, 0.0])
+        t[0] += float(y)
+        t[1] += 1.0
     blocks: list[list[float]] = []  # [q_max, reais, n]
-    for q, y in sorted(points):
-        blocks.append([q, float(y), 1.0])
+    for q in sorted(tied):
+        blocks.append([q, tied[q][0], tied[q][1]])
         while len(blocks) > 1 and blocks[-2][1] / blocks[-2][2] >= blocks[-1][1] / blocks[-1][2]:
             q2, r2, n2 = blocks.pop()
             blocks[-1] = [q2, blocks[-1][1] + r2, blocks[-1][2] + n2]
